@@ -1,0 +1,20 @@
+Timestamp,Raw Input Length,Safe Intent,Action Plan Summary
+2026-06-20 13:12:25,111,Please organize my desktop files. My secret password is '[REDACTED_PASSWORD]' and my bank folder is [REDACTED_PATH].,"Here is the 3-step technical plan to organize your desktop files on a Windows machine:
+
+1. **Scan an..."
+2026-06-20 15:10:37,Please organize my desktop files. My secret password is [REDACTED_PASSWORD] and my bank folder is [REDACTED_FILE_PATH].,ORGANIZE_FILES,Successfully organized 3 files in the Sandbox.
+2026-06-20 15:17:18,Please organize my desktop files. My secret password is [REDACTED_PASSWORD] and my bank folder is [REDACTED_FILE_PATH].,ORGANIZE_FILES,Successfully organized 0 files in the Sandbox.
+2026-06-20 15:28:45,ERROR_CAUGHT,ABORTED,SYSTEM INTERRUPT: CRITICAL: Unauthorized structure '--bypass_rules' detected. Network transmission frozen.
+2026-06-20 15:41:53,ERROR_CAUGHT,ABORTED,SYSTEM INTERRUPT: CRITICAL: Unauthorized structure '--bypass_rules' detected. Network transmission frozen.
+2026-06-20 16:57:08,[No input provided],UNKNOWN_TASK,No action taken. Command not authorized for physical execution.
+2026-06-20 16:59:52,"Please organize the files in my sandbox. Also, keep my secret Kaggle password '[REDACTED_PASSWORD]' and my bank routing number [REDACTED_BANK_ROUTING_NUMBER] safe.",ORGANIZE_FILES,Successfully organized 3 files in the Sandbox.
+2026-06-21 11:08:32,Perform a deep content inspection to organize daily chaotic text files.,DEEP_ORGANIZE,"Analyzed content of 'invoice_draft.txt' -> Classified and moved to [Finance] folder.
+Analyzed content of 'notes1.txt' -> Classified and moved to [Projects] folder."
+2026-06-21 11:48:44,Add a new task: Record the 5-minute Kaggle presentation video tomorrow.,UNKNOWN_TASK,No action taken. Command not authorized.
+2026-06-21 11:52:06,Add a new task to record the 5-minute Kaggle presentation video tomorrow.,UNKNOWN_TASK,No action taken. Command not authorized.
+2026-06-21 11:58:49,Add a new task: Record the 5-minute Kaggle presentation video tomorrow.,LOG_TASK,Successfully logged personal task to daily_tasks.txt.
+2026-06-21 13:03:16,HEALTH,LOG_MEDICATION,Log medication: Vitamin D 1000mg every morning,💊 Medication logged: 'Vitamin D' | Dose: 1000mg
+2026-06-21 13:04:40,EVENTS,LOG_EVENT,Plan birthday party for next Saturday,🎉 Event created: 'Birthday Party' on 2026-06-27 | Guests: 0
+2026-06-21 13:05:34,GARDEN,LOG_PLANT,Add tomato plant to garden,🌱 Plant added: 'tomato plant' | Planted: today
+2026-06-21 13:05:57,GARDEN,LIST_GARDEN,Show garden status,"🌱 **Plants (1):**
+  • tomato plant — planted 2026-06-21"

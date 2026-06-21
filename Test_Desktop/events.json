@@ -1,0 +1,13 @@
+{
+  "events": [
+    {
+      "id": 1,
+      "title": "Birthday Party",
+      "date": "2026-06-27",
+      "time": "Time TBD",
+      "guests": [],
+      "notes": null,
+      "created": "2026-06-21 13:04"
+    }
+  ]
+}

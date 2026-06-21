@@ -1,0 +1,2 @@
+- Add a task to record the 5-minute Kaggle presentation video tomorrow.
+- Add a new task: Record the 5-minute Kaggle presentation video tomorrow.

@@ -1,0 +1,13 @@
+{
+  "medications": [
+    {
+      "name": "Vitamin D",
+      "dose": "1000mg",
+      "time": "morning",
+      "added": "2026-06-21 13:03",
+      "notes": "1000mg every morning"
+    }
+  ],
+  "appointments": [],
+  "notes": []
+}
