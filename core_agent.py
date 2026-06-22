@@ -790,6 +790,137 @@ if __name__ == "__main__":
                 view_events_btn.click(fn=lambda: execute_action({"action": "LIST_EVENTS", "extracted_data": {}}), outputs=data_output)
                 view_garden_btn.click(fn=lambda: execute_action({"action": "LIST_GARDEN", "extracted_data": {}}), outputs=data_output)
 
+            with gr.Tab("📊 Analytics"):
+                gr.HTML("<p style='color:#94a3b8;margin-bottom:16px;'>Your real usage data visualized.</p>")
+                refresh_btn = gr.Button("🔄 Refresh Charts", variant="primary")
+                analytics_output = gr.HTML(label="Charts")
+
+                def build_analytics():
+                    if not os.path.isfile(ANALYTICS_FILE):
+                        return "<p style='color:#94a3b8;'>No data yet. Use the agent first!</p>"
+                    
+                    # Read CSV
+                    rows = []
+                    with open(ANALYTICS_FILE, "r", encoding="utf-8") as f:
+                        reader = csv.DictReader(f)
+                        for row in reader:
+                            rows.append(row)
+                    
+                    if not rows:
+                        return "<p style='color:#94a3b8;'>No data yet!</p>"
+
+                    # Count domains
+                    domains = {}
+                    actions = {}
+                    dates = {}
+                    for row in rows:
+                        d = row.get("Domain", "UNKNOWN")
+                        a = row.get("Action", "UNKNOWN")
+                        t = row.get("Timestamp", "")[:10]
+                        domains[d] = domains.get(d, 0) + 1
+                        actions[a] = actions.get(a, 0) + 1
+                        dates[t] = dates.get(t, 0) + 1
+
+                    # Domain colors
+                    domain_colors = {
+                        "TASKS": "#6366f1",
+                        "HEALTH": "#34d399",
+                        "EVENTS": "#c084fc",
+                        "GARDEN": "#86efac",
+                        "UNKNOWN": "#64748b"
+                    }
+
+                    # Build domain bars
+                    max_domain = max(domains.values()) if domains else 1
+                    domain_bars = ""
+                    for d, count in sorted(domains.items(), key=lambda x: -x[1]):
+                        color = domain_colors.get(d, "#6366f1")
+                        width = int((count / max_domain) * 100)
+                        domain_bars += f"""
+                        <div style="margin-bottom:12px;">
+                            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                                <span style="color:#e2e8f0;font-size:13px;font-weight:600;">{d}</span>
+                                <span style="color:{color};font-size:13px;font-weight:700;">{count} actions</span>
+                            </div>
+                            <div style="background:#1e2a45;border-radius:6px;height:12px;">
+                                <div style="background:{color};width:{width}%;height:12px;
+                                    border-radius:6px;transition:width 0.3s;"></div>
+                            </div>
+                        </div>"""
+
+                    # Build action bars (top 6)
+                    max_action = max(actions.values()) if actions else 1
+                    action_bars = ""
+                    for a, count in sorted(actions.items(), key=lambda x: -x[1])[:6]:
+                        width = int((count / max_action) * 100)
+                        action_bars += f"""
+                        <div style="margin-bottom:10px;">
+                            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                                <span style="color:#94a3b8;font-size:12px;">{a}</span>
+                                <span style="color:#6366f1;font-size:12px;font-weight:700;">{count}x</span>
+                            </div>
+                            <div style="background:#1e2a45;border-radius:4px;height:8px;">
+                                <div style="background:linear-gradient(90deg,#6366f1,#8b5cf6);
+                                    width:{width}%;height:8px;border-radius:4px;"></div>
+                            </div>
+                        </div>"""
+
+                    # Build daily activity
+                    daily_bars = ""
+                    max_daily = max(dates.values()) if dates else 1
+                    for day, count in sorted(dates.items())[-7:]:
+                        height = max(20, int((count / max_daily) * 80))
+                        daily_bars += f"""
+                        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                            <span style="color:#6366f1;font-size:11px;font-weight:700;">{count}</span>
+                            <div style="background:linear-gradient(180deg,#6366f1,#8b5cf6);
+                                width:32px;height:{height}px;border-radius:4px 4px 0 0;"></div>
+                            <span style="color:#64748b;font-size:10px;">{day[5:]}</span>
+                        </div>"""
+
+                    total = len(rows)
+                    html = f"""
+                    <div style="background:#0a0e1a;padding:20px;border-radius:12px;">
+                        
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:24px;">
+                            <div style="background:#111827;border:1px solid #1e2a45;border-radius:10px;padding:16px;text-align:center;">
+                                <div style="font-size:28px;font-weight:700;color:#6366f1;">{total}</div>
+                                <div style="color:#64748b;font-size:12px;margin-top:4px;">Total Actions</div>
+                            </div>
+                            <div style="background:#111827;border:1px solid #1e2a45;border-radius:10px;padding:16px;text-align:center;">
+                                <div style="font-size:28px;font-weight:700;color:#34d399;">{len(domains)}</div>
+                                <div style="color:#64748b;font-size:12px;margin-top:4px;">Domains Used</div>
+                            </div>
+                            <div style="background:#111827;border:1px solid #1e2a45;border-radius:10px;padding:16px;text-align:center;">
+                                <div style="font-size:28px;font-weight:700;color:#c084fc;">{len(dates)}</div>
+                                <div style="color:#64748b;font-size:12px;margin-top:4px;">Active Days</div>
+                            </div>
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+                            <div style="background:#111827;border:1px solid #1e2a45;border-radius:10px;padding:16px;">
+                                <h3 style="color:#e2e8f0;margin:0 0 16px;font-size:14px;">📊 Usage by Domain</h3>
+                                {domain_bars}
+                            </div>
+                            <div style="background:#111827;border:1px solid #1e2a45;border-radius:10px;padding:16px;">
+                                <h3 style="color:#e2e8f0;margin:0 0 16px;font-size:14px;">⚡ Top Actions</h3>
+                                {action_bars}
+                            </div>
+                        </div>
+
+                        <div style="background:#111827;border:1px solid #1e2a45;border-radius:10px;padding:16px;">
+                            <h3 style="color:#e2e8f0;margin:0 0 16px;font-size:14px;">📅 Daily Activity (Last 7 Days)</h3>
+                            <div style="display:flex;align-items:flex-end;gap:12px;height:120px;padding-bottom:8px;">
+                                {daily_bars}
+                            </div>
+                        </div>
+
+                    </div>"""
+                    return html
+
+                refresh_btn.click(fn=build_analytics, outputs=analytics_output)
+                analytics_output.value = build_analytics()
+
             with gr.Tab("ℹ️ About"):
                 gr.HTML("""
                 <div style="color:#94a3b8;line-height:1.8;max-width:700px;padding:20px;">
