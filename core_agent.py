@@ -638,8 +638,77 @@ QUICK_COMMANDS = [
 ]
 
 CUSTOM_CSS = """
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+* { font-family: 'Inter', sans-serif !important; }
 body, .gradio-container { background: #0a0e1a !important; color: #e2e8f0 !important; }
 .gradio-container { max-width: 1100px !important; margin: 0 auto !important; }
+
+.gr-textbox textarea, .gr-textbox input {
+    background: #111827 !important;
+    border: 1px solid #2d3561 !important;
+    border-radius: 10px !important;
+    color: #e2e8f0 !important;
+    font-size: 15px !important;
+}
+.gr-textbox textarea:focus, .gr-textbox input:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.15) !important;
+}
+button.primary { 
+    background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+    border: none !important; border-radius: 10px !important;
+    font-weight: 600 !important; font-size: 15px !important;
+}
+button.primary:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 8px 25px rgba(99,102,241,0.4) !important;
+}
+button.secondary {
+    background: #1e2a45 !important;
+    border: 1px solid #2d3561 !important;
+    border-radius: 8px !important;
+    color: #94a3b8 !important;
+}
+.gr-panel, .gr-box {
+    background: #111827 !important;
+    border: 1px solid #1e2a45 !important;
+    border-radius: 12px !important;
+}
+label span {
+    color: #94a3b8 !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+}
+.gr-tab-nav button { 
+    color: #64748b !important; 
+    font-weight: 500 !important;
+}
+.gr-tab-nav button.selected { 
+    color: #6366f1 !important;
+    border-bottom: 2px solid #6366f1 !important;
+}
+.gr-textbox {
+    background: #0d1226 !important;
+    border: 1px solid #1e2a45 !important;
+    border-radius: 10px !important;
+}
+textarea {
+    background: #0d1226 !important;
+    color: #e2e8f0 !important;
+}
+.gradio-container {
+    min-width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 20px !important;
+}
+.gr-block.gr-box {
+    background: #111827 !important;
+    border: 1px solid #1e2a45 !important;
+    border-radius: 12px !important;
+}
 """
 
 if __name__ == "__main__":
