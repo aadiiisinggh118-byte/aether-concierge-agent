@@ -547,6 +547,138 @@ def log_to_ledger(raw_input, brain_result, physical_result):
 # ==========================================
 # DASHBOARD
 # ==========================================
+
+def generate_pdf_report() -> str:
+    tasks = get_tasks()
+    health = get_health_data()
+    events = get_events()
+    garden = get_garden_data()
+    today = date.today().strftime("%B %d, %Y")
+    pending = [t for t in tasks if t.get("status") == "pending"]
+    done = [t for t in tasks if t.get("status") == "done"]
+
+    # Build HTML report
+    tasks_html = ""
+    for t in pending:
+        p = t.get("priority", "medium")
+        color = {"high": "#f87171", "medium": "#fbbf24", "low": "#34d399"}.get(p, "#fbbf24")
+        tasks_html += f"""
+        <tr>
+            <td style="padding:8px;border-bottom:1px solid #eee;">{t['title']}</td>
+            <td style="padding:8px;border-bottom:1px solid #eee;color:{color};font-weight:600;">{p.upper()}</td>
+            <td style="padding:8px;border-bottom:1px solid #eee;">{t.get('due_date','—')}</td>
+        </tr>"""
+
+    meds_html = ""
+    for m in health.get("medications", []):
+        meds_html += f"""
+        <tr>
+            <td style="padding:8px;border-bottom:1px solid #eee;">{m['name']}</td>
+            <td style="padding:8px;border-bottom:1px solid #eee;">{m['dose']}</td>
+            <td style="padding:8px;border-bottom:1px solid #eee;">{m['time']}</td>
+        </tr>"""
+
+    events_html = ""
+    for e in events.get("events", []):
+        events_html += f"""
+        <tr>
+            <td style="padding:8px;border-bottom:1px solid #eee;">{e['title']}</td>
+            <td style="padding:8px;border-bottom:1px solid #eee;">{e['date']}</td>
+            <td style="padding:8px;border-bottom:1px solid #eee;">{len(e.get('guests',[]))} guests</td>
+        </tr>"""
+
+    plants_html = ""
+    for p in garden.get("plants", []):
+        plants_html += f"""
+        <tr>
+            <td style="padding:8px;border-bottom:1px solid #eee;">{p['name']}</td>
+            <td style="padding:8px;border-bottom:1px solid #eee;">{p['planted']}</td>
+        </tr>"""
+
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Aether Concierge Report</title>
+<style>
+    body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; color: #1e293b; }}
+    h1 {{ color: #6366f1; border-bottom: 3px solid #6366f1; padding-bottom: 10px; }}
+    h2 {{ color: #1e293b; margin-top: 30px; font-size: 16px; 
+          background: #f1f5f9; padding: 8px 12px; border-radius: 6px; }}
+    table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
+    th {{ background: #6366f1; color: white; padding: 10px 8px; text-align: left; }}
+    .summary {{ display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin: 20px 0; }}
+    .card {{ background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; 
+             padding: 16px; text-align: center; }}
+    .card-number {{ font-size: 28px; font-weight: 700; color: #6366f1; }}
+    .card-label {{ font-size: 12px; color: #64748b; margin-top: 4px; }}
+    .footer {{ margin-top: 40px; text-align: center; color: #94a3b8; font-size: 12px; 
+               border-top: 1px solid #e2e8f0; padding-top: 16px; }}
+</style>
+</head>
+<body>
+    <h1>🛡️ Aether Concierge — Personal Report</h1>
+    <p style="color:#64748b;">Generated on {today} · All data stored locally on your device</p>
+
+    <div class="summary">
+        <div class="card">
+            <div class="card-number">{len(pending)}</div>
+            <div class="card-label">Pending Tasks</div>
+        </div>
+        <div class="card">
+            <div class="card-number">{len(done)}</div>
+            <div class="card-label">Completed Tasks</div>
+        </div>
+        <div class="card">
+            <div class="card-number">{len(health.get('medications',[]))}</div>
+            <div class="card-label">Medications</div>
+        </div>
+        <div class="card">
+            <div class="card-number">{len(events.get('events',[]))}</div>
+            <div class="card-label">Events Planned</div>
+        </div>
+    </div>
+
+    <h2>✅ Pending Tasks</h2>
+    <table>
+        <tr><th>Task</th><th>Priority</th><th>Due Date</th></tr>
+        {tasks_html if tasks_html else "<tr><td colspan='3' style='padding:8px;color:#94a3b8;'>No pending tasks</td></tr>"}
+    </table>
+
+    <h2>💊 Medications</h2>
+    <table>
+        <tr><th>Medication</th><th>Dose</th><th>Time</th></tr>
+        {meds_html if meds_html else "<tr><td colspan='3' style='padding:8px;color:#94a3b8;'>No medications logged</td></tr>"}
+    </table>
+
+    <h2>🎉 Events</h2>
+    <table>
+        <tr><th>Event</th><th>Date</th><th>Guests</th></tr>
+        {events_html if events_html else "<tr><td colspan='3' style='padding:8px;color:#94a3b8;'>No events planned</td></tr>"}
+    </table>
+
+    <h2>🌱 Garden</h2>
+    <table>
+        <tr><th>Plant</th><th>Planted</th></tr>
+        {plants_html if plants_html else "<tr><td colspan='2' style='padding:8px;color:#94a3b8;'>No plants logged</td></tr>"}
+    </table>
+
+    <div class="footer">
+        🛡️ Aether Concierge · Privacy-First · Generated locally · No cloud storage
+    </div>
+</body>
+</html>"""
+
+    # Save report file
+    report_path = os.path.join(os.getcwd(), "aether_report.html")
+    with open(report_path, "w", encoding="utf-8") as f:
+        f.write(html)
+
+    # Open in browser automatically
+    import webbrowser
+    webbrowser.open(f"file:///{report_path}")
+    return f"✅ Report generated and opened in browser!\nSaved to: {report_path}\n\nYou can print this page as PDF using Ctrl+P → Save as PDF"
+
 def get_dashboard_summary() -> str:
     tasks = get_tasks()
     health = get_health_data()
@@ -789,6 +921,11 @@ if __name__ == "__main__":
                 view_health_btn.click(fn=lambda: execute_action({"action": "LIST_HEALTH", "extracted_data": {}}), outputs=data_output)
                 view_events_btn.click(fn=lambda: execute_action({"action": "LIST_EVENTS", "extracted_data": {}}), outputs=data_output)
                 view_garden_btn.click(fn=lambda: execute_action({"action": "LIST_GARDEN", "extracted_data": {}}), outputs=data_output)
+
+                gr.HTML("<hr style='border-color:#1e2a45;margin:16px 0;'>")
+                export_btn = gr.Button("📄 Download Full Report (PDF)", variant="primary")
+                export_status = gr.Textbox(label="Export Status", interactive=False, lines=3)
+                export_btn.click(fn=generate_pdf_report, outputs=export_status)
 
             with gr.Tab("📊 Analytics"):
                 gr.HTML("<p style='color:#94a3b8;margin-bottom:16px;'>Your real usage data visualized.</p>")
