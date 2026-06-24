@@ -842,6 +842,192 @@ textarea {
     border-radius: 12px !important;
 }
 """
+# ==========================================
+# GUARDIAN MODE - AUTONOMOUS MONITOR
+# Runs every 60 mins in background
+# No user input needed - truly autonomous
+# ==========================================
+
+guardian_status = {
+    "active": False,
+    "last_check": None,
+    "alerts": [],
+    "risk_level": "LOW"
+}
+
+def run_guardian_monitor():
+    """
+    Autonomous background agent that monitors user's life
+    and proactively sends alerts without user asking.
+    This is what makes Aether a TRUE agent, not just a tool.
+    """
+    import time
+    guardian_status["active"] = True
+    
+    while True:
+        alerts = []
+        risks = []
+        now = datetime.now()
+        today = date.today()
+        
+        # ── CHECK 1: Missed Medications ──
+        health = get_health_data()
+        meds = health.get("medications", [])
+        morning_meds = [m for m in meds if "morning" in m.get("time","").lower()]
+        if morning_meds and now.hour >= 10:
+            for med in morning_meds:
+                alert = f"MISSED DOSE: {med['name']} {med['dose']} — not confirmed today!"
+                alerts.append(alert)
+                risks.append("HEALTH")
+                send_windows_notification(
+                    "💊 Aether Health Guardian",
+                    f"Missed medication: {med['name']} {med['dose']}"
+                )
+
+        # ── CHECK 2: Overdue High Priority Tasks ──
+        tasks = get_tasks()
+        for t in tasks:
+            if t.get("status") != "pending":
+                continue
+            if t.get("priority") != "high":
+                continue
+            due = t.get("due_date", "")
+            if not due:
+                continue
+            try:
+                due_date = datetime.strptime(due[:10], "%Y-%m-%d").date()
+                days_overdue = (today - due_date).days
+                if days_overdue >= 2:
+                    alert = f"CRITICAL: '{t['title']}' is {days_overdue} days overdue!"
+                    alerts.append(alert)
+                    risks.append("TASK")
+                    send_windows_notification(
+                        "🔴 Aether Task Guardian",
+                        f"CRITICAL: {t['title']} is {days_overdue} days overdue!"
+                    )
+            except:
+                continue
+
+        # ── CHECK 3: Events in next 24 hours ──
+        events_data = get_events()
+        for e in events_data.get("events", []):
+            try:
+                event_date_str = e.get("date", "")
+                for fmt in ["%Y-%m-%d", "%B %d, %Y", "%b %d, %Y"]:
+                    try:
+                        event_date = datetime.strptime(
+                            event_date_str[:12].strip(), fmt
+                        ).date()
+                        break
+                    except:
+                        continue
+                days_until = (event_date - today).days
+                if days_until == 1:
+                    alert = f"EVENT TOMORROW: {e['title']}!"
+                    alerts.append(alert)
+                    send_windows_notification(
+                        "🎉 Aether Event Guardian",
+                        f"Reminder: {e['title']} is tomorrow!"
+                    )
+                elif days_until == 0:
+                    alert = f"EVENT TODAY: {e['title']}!"
+                    alerts.append(alert)
+                    send_windows_notification(
+                        "🎉 Aether Event Guardian",
+                        f"TODAY: {e['title']} is happening today!"
+                    )
+            except:
+                continue
+
+        # ── CHECK 4: Health Pattern Analysis ──
+        if len(meds) > 0:
+            # Check analytics for medication patterns
+            missed_count = len([a for a in alerts if "MISSED" in a])
+            if missed_count > 0:
+                risks.append("HEALTH_PATTERN")
+                alert = f"HEALTH PATTERN: {missed_count} medication alert(s) detected today"
+                alerts.append(alert)
+
+        # ── UPDATE STATUS ──
+        guardian_status["last_check"] = now.strftime("%Y-%m-%d %H:%M:%S")
+        guardian_status["alerts"] = alerts
+        guardian_status["risk_level"] = (
+            "HIGH" if "HEALTH" in risks or len(alerts) >= 3
+            else "MEDIUM" if risks
+            else "LOW"
+        )
+
+        # ── AUTO MORNING BRIEFING at 9am ──
+        if now.hour == 9 and now.minute < 5:
+            import urllib.request
+            try:
+                url = "http://127.0.0.1:8765/generate_daily_briefing"
+                with urllib.request.urlopen(url, timeout=5) as response:
+                    result = json.loads(response.read().decode())
+                send_windows_notification(
+                    "🌅 Aether Morning Briefing",
+                    result["briefing"][:200]
+                )
+            except:
+                pass
+
+        # Wait 60 minutes before next check
+        time.sleep(3600)
+
+
+def get_guardian_report() -> str:
+    """Generate caregiver/guardian report showing full status."""
+    if not guardian_status["active"]:
+        return "Guardian Mode is not active. Restart the app."
+
+    tasks = get_tasks()
+    health = get_health_data()
+    events = get_events()
+
+    pending = [t for t in tasks if t.get("status") == "pending"]
+    done = [t for t in tasks if t.get("status") == "done"]
+    high = [t for t in pending if t.get("priority") == "high"]
+    meds = health.get("medications", [])
+    appts = health.get("appointments", [])
+
+    risk = guardian_status["risk_level"]
+    risk_color = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(risk, "🟢")
+    alerts = guardian_status["alerts"]
+    last_check = guardian_status["last_check"] or "Not yet"
+
+    report = f"""🛡️ AETHER GUARDIAN REPORT
+Generated: {datetime.now().strftime("%B %d, %Y at %I:%M %p")}
+Last Monitor Check: {last_check}
+
+{risk_color} RISK LEVEL: {risk}
+━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ ACTIVE ALERTS ({len(alerts)}):
+"""
+    if alerts:
+        for a in alerts:
+            report += f"  • {a}\n"
+    else:
+        report += "  ✅ No active alerts!\n"
+
+    report += f"""
+━━━━━━━━━━━━━━━━━━━━━━
+📋 TASKS STATUS:
+  • Pending: {len(pending)} tasks
+  • High Priority: {len(high)} tasks
+  • Completed Today: {len(done)} tasks
+
+💊 HEALTH STATUS:
+  • Medications Tracked: {len(meds)}
+  • Appointments: {len(appts)}
+
+🎉 EVENTS:
+  • Upcoming: {len(events.get('events', []))} events
+━━━━━━━━━━━━━━━━━━━━━━
+🔌 Monitored by Aether Guardian (checks every 60 min)
+🛡️ All data stored locally — privacy first"""
+
+    return report
 
 if __name__ == "__main__":
     ensure_sandbox()
@@ -851,6 +1037,10 @@ if __name__ == "__main__":
     from mcp_server import run_mcp_server
     mcp_thread = threading.Thread(target=run_mcp_server, daemon=True)
     mcp_thread.start()
+    # Start Guardian Monitor in background
+    guardian_thread = threading.Thread(target=run_guardian_monitor, daemon=True)
+    guardian_thread.start()
+    print("[Aether] Guardian Monitor started — checking every 60 minutes")
     print("[Aether] MCP Server started on port 8765")
     
     send_windows_notification("Aether Concierge", "Your personal agent is ready!")
@@ -1096,6 +1286,44 @@ if __name__ == "__main__":
 
                 refresh_btn.click(fn=build_analytics, outputs=analytics_output)
                 analytics_output.value = build_analytics()
+
+            with gr.Tab("🛡️ Guardian"):
+                gr.HTML("<p style='color:#94a3b8;margin-bottom:16px;'>Autonomous life monitor — runs in background, no input needed.</p>")
+                
+                with gr.Row():
+                    guardian_refresh_btn = gr.Button("🔄 Check Guardian Status", variant="primary")
+                    guardian_report_btn = gr.Button("📋 Full Caregiver Report", variant="secondary")
+                
+                guardian_output = gr.Textbox(
+                    label="🛡️ Guardian Status",
+                    lines=20,
+                    interactive=False,
+                    value="Click 'Check Guardian Status' to see live monitoring results."
+                )
+
+                def check_guardian():
+                    risk = guardian_status["risk_level"]
+                    alerts = guardian_status["alerts"]
+                    last = guardian_status["last_check"] or "Checking..."
+                    risk_icon = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(risk, "🟢")
+                    
+                    status = f"""{risk_icon} GUARDIAN ACTIVE
+    Last Check: {last}
+    Risk Level: {risk}
+    Active Alerts: {len(alerts)}
+
+"""
+                    if alerts:
+                        status += "ALERTS:\n"
+                        for a in alerts:
+                            status += f"  ⚠️ {a}\n"
+                    else:
+                        status += "✅ All clear! No alerts detected."
+                    
+                    return status
+
+                guardian_refresh_btn.click(fn=check_guardian, outputs=guardian_output)
+                guardian_report_btn.click(fn=get_guardian_report, outputs=guardian_output)
 
             with gr.Tab("ℹ️ About"):
                 gr.HTML("""
