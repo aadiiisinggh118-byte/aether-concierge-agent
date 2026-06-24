@@ -939,14 +939,75 @@ def run_guardian_monitor():
             except:
                 continue
 
-        # ── CHECK 4: Health Pattern Analysis ──
+        # ── CHECK 4: Advanced Health Pattern + Auto Decision Engine ──
         if len(meds) > 0:
-            # Check analytics for medication patterns
             missed_count = len([a for a in alerts if "MISSED" in a])
+            
             if missed_count > 0:
                 risks.append("HEALTH_PATTERN")
-                alert = f"HEALTH PATTERN: {missed_count} medication alert(s) detected today"
+                
+                # Read analytics to count historical misses
+                historical_misses = 0
+                if os.path.isfile(ANALYTICS_FILE):
+                    with open(ANALYTICS_FILE, "r", encoding="utf-8") as f:
+                        reader = csv.DictReader(f)
+                        for row in reader:
+                            if "MISSED" in row.get("Result", ""):
+                                historical_misses += 1
+
+                # Calculate adherence %
+                total_days = max(historical_misses + 1, 1)
+                adherence = max(0, 100 - (historical_misses / total_days * 100))
+                adherence = round(adherence, 1)
+
+                alert = (
+                    f"HEALTH PATTERN: Medication adherence {adherence}% "
+                    f"— {historical_misses} miss(es) detected in history"
+                )
                 alerts.append(alert)
+
+                # ── AUTO DECISION ENGINE ──
+                # If missed 3+ times → automatically create doctor task
+                if historical_misses >= 3:
+                    existing_tasks = get_tasks()
+                    doctor_exists = any(
+                        "doctor" in t["title"].lower() and
+                        t["status"] == "pending"
+                        for t in existing_tasks
+                    )
+                    if not doctor_exists:
+                        # Auto-create doctor appointment task
+                        new_task = {
+                            "id": f"guardian_{int(time.time()*1000)}",
+                            "title": "GUARDIAN ALERT: Schedule doctor visit — medication adherence low",
+                            "priority": "high",
+                            "status": "pending",
+                            "due_date": (date.today() + timedelta(days=2)).strftime("%Y-%m-%d"),
+                            "due_time": "",
+                            "notes": f"Auto-created by Guardian. Adherence: {adherence}%. Missed {historical_misses} time(s).",
+                            "created": datetime.now().strftime("%Y-%m-%d %H:%M")
+                        }
+                        existing_tasks.append(new_task)
+                        save_tasks(existing_tasks)
+                        alerts.append(
+                            f"AUTO ACTION: Guardian created doctor visit task "
+                            f"(adherence dropped to {adherence}%)"
+                        )
+                        send_windows_notification(
+                            "🤖 Aether Auto-Action",
+                            f"Guardian created: Schedule doctor visit (adherence {adherence}%)"
+                        )
+
+                # If missed 2+ times → escalate risk
+                if historical_misses >= 2:
+                    alerts.append(
+                        f"RISK ESCALATION: Medication adherence {adherence}% "
+                        f"— recommend immediate attention"
+                    )
+                    send_windows_notification(
+                        "🔴 Aether Risk Escalation",
+                        f"Health risk escalated! Adherence: {adherence}%. Please take action."
+                    )
 
         # ── UPDATE STATUS ──
         guardian_status["last_check"] = now.strftime("%Y-%m-%d %H:%M:%S")
@@ -1324,7 +1385,7 @@ if __name__ == "__main__":
 
                 guardian_refresh_btn.click(fn=check_guardian, outputs=guardian_output)
                 guardian_report_btn.click(fn=get_guardian_report, outputs=guardian_output)
-
+                
             with gr.Tab("ℹ️ About"):
                 gr.HTML("""
                 <div style="color:#94a3b8;line-height:1.8;max-width:700px;padding:20px;">
