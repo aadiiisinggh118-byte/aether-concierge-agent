@@ -845,6 +845,14 @@ textarea {
 
 if __name__ == "__main__":
     ensure_sandbox()
+    
+    # Start MCP server in background thread
+    import threading
+    from mcp_server import run_mcp_server
+    mcp_thread = threading.Thread(target=run_mcp_server, daemon=True)
+    mcp_thread.start()
+    print("[Aether] MCP Server started on port 8765")
+    
     send_windows_notification("Aether Concierge", "Your personal agent is ready!")
 
     with gr.Blocks(title="Aether Concierge") as demo:
@@ -898,6 +906,37 @@ if __name__ == "__main__":
                     outputs=[out_privacy, out_action, out_result, out_message, dashboard])
                 user_input.submit(fn=run_and_refresh, inputs=user_input,
                     outputs=[out_privacy, out_action, out_result, out_message, dashboard])
+
+                # MCP Daily Briefing
+                gr.HTML("<hr style='border-color:#1e2a45;margin:12px 0;'>")
+                briefing_btn = gr.Button("🌅 Get Daily Briefing (MCP)", variant="secondary")
+                briefing_output = gr.Textbox(label="🤖 MCP Daily Briefing", lines=6, interactive=False)
+
+                def run_daily_briefing():
+        # Connect to REAL MCP server via HTTP
+                    import urllib.request
+                    try:
+                        url = "http://127.0.0.1:8765/generate_daily_briefing"
+                        with urllib.request.urlopen(url, timeout=5) as response:
+                            result = json.loads(response.read().decode())
+                    except Exception as e:
+                        return f"MCP Server not running. Start it with: python mcp_server.py\nError: {e}"
+                    
+                    briefing = result["briefing"]
+                    s = result["summary"]
+                    return f"""{briefing}
+
+                ━━━━━━━━━━━━━━━━━━━━━━
+                📊 Summary:
+                ✅ Pending Tasks: {s['pending_tasks']}
+                🔴 High Priority: {s['high_priority']}
+                ⚠️ Overdue: {s['overdue']}
+                💊 Medications Today: {s['medications_today']}
+                🎉 Upcoming Events: {s['upcoming_events']}
+                ━━━━━━━━━━━━━━━━━━━━━━
+                🔌 Powered by Aether MCP Server (port 8765)"""
+
+                briefing_btn.click(fn=run_daily_briefing, outputs=briefing_output)
 
             with gr.Tab("🧠 Memory"):
                 memory_display = gr.Textbox(label="Current Rules", value=get_memory_display(), lines=6, interactive=False)
