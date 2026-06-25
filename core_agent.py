@@ -687,18 +687,18 @@ def get_dashboard_summary() -> str:
     pending = [t for t in tasks if t.get("status") == "pending"]
     done = [t for t in tasks if t.get("status") == "done"]
     high = [t for t in pending if t.get("priority") == "high"]
-    return f"""Your Aether Dashboard
-========================
-Tasks: {len(pending)} pending | {len(done)} done
-High Priority: {len(high)} tasks
-Medications: {len(health.get('medications', []))} tracked
-Appointments: {len(health.get('appointments', []))} scheduled
-Events: {len(events.get('events', []))} planned
-Plants: {len(garden.get('plants', []))} in garden
-========================
-Try: "Add urgent task: Submit report by 5pm"
-Or: "Mark last task as done"
-Or: "Search tasks: doctor" """
+    return f"""📊 Your Aether Dashboard
+─────────────────────────
+✅ Tasks: {len(pending)} pending | {len(done)} done
+🔴 High Priority: {len(high)} tasks
+💊 Medications: {len(health.get('medications', []))} tracked
+🏥 Appointments: {len(health.get('appointments', []))} scheduled
+🎉 Events: {len(events.get('events', []))} planned
+🌱 Plants: {len(garden.get('plants', []))} in garden
+─────────────────────────
+💬 "Add urgent task: Call doctor"
+💬 "Mark last task as done"
+💬 "Get Daily Briefing (MCP)" """
 
 # ==========================================
 # MAIN PIPELINE
@@ -754,6 +754,7 @@ HEADER_HTML = """
         <span style="background:#1e3a1e;color:#86efac;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;">🌱 GARDEN</span>
         <span style="background:#2a1e1e;color:#f87171;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;">🛡️ PRIVACY</span>
         <span style="background:#1e2a3a;color:#38bdf8;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;">🔔 NOTIFICATIONS</span>
+        <span style="background:#1a2a1a;color:#4ade80;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;">🛡️ GUARDIAN</span>
     </div>
 </div>
 """
@@ -1429,7 +1430,7 @@ if __name__ == "__main__":
                         <div style="margin-bottom:12px;">
                             <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
                                 <span style="color:#e2e8f0;font-size:13px;font-weight:600;">{d}</span>
-                                <span style="color:{color};font-size:13px;font-weight:700;">{count} actions</span>
+                                <span style="color:{color};font-size:13px;font-weight:700;">{count} {"action" if count == 1 else "actions"}</span>
                             </div>
                             <div style="background:#1e2a45;border-radius:6px;height:12px;">
                                 <div style="background:{color};width:{width}%;height:12px;
@@ -1553,26 +1554,54 @@ if __name__ == "__main__":
             with gr.Tab("ℹ️ About"):
                 gr.HTML("""
                 <div style="color:#94a3b8;line-height:1.8;max-width:700px;padding:20px;">
-                    <h2 style="color:#e2e8f0;">Aether Concierge</h2>
-                    <p><strong style="color:#6366f1;">Privacy-First Multi-Agent Architecture</strong></p>
-                    <h3 style="color:#c084fc;">Agent Nodes</h3>
+                    <h2 style="color:#e2e8f0;">🛡️ Aether Concierge</h2>
+                    <p><strong style="color:#6366f1;">Privacy-First Autonomous Life Guardian</strong></p>
+                    
+                    <h3 style="color:#c084fc;margin-top:20px;">Agent Architecture</h3>
                     <ul>
-                        <li><strong>Node A</strong> - Privacy Analyst: Sanitizes + classifies in ONE API call</li>
-                        <li><strong>Node B</strong> - Logic Engine: 16 action types across 4 domains</li>
-                        <li><strong>Node C</strong> - Physical Executor: 100% local, zero API calls</li>
+                        <li><strong>Node A</strong> — Privacy Analyst: Sanitizes + classifies in ONE API call</li>
+                        <li><strong>Node B</strong> — Logic Engine: 16 action types across 4 domains</li>
+                        <li><strong>Node C</strong> — Physical Executor: 100% local, zero API calls</li>
                     </ul>
-                    <h3 style="color:#34d399;">Key Features</h3>
+
+                    <h3 style="color:#34d399;margin-top:20px;">Life Domains</h3>
                     <ul>
-                        <li>Windows Desktop Notifications for tasks and reminders</li>
-                        <li>Conversation Context - "Mark that as done" works!</li>
-                        <li>Task Priorities - High/Medium/Low</li>
-                        <li>Task Search by keyword</li>
-                        <li>Task Completion tracking</li>
-                        <li>Long-term memory across sessions</li>
-                        <li>All data stored locally - never leaves your machine</li>
+                        <li>✅ <strong>Tasks</strong> — Priorities, search, completion tracking</li>
+                        <li>💊 <strong>Health</strong> — Medications, appointments, adherence</li>
+                        <li>🎉 <strong>Events</strong> — Planning, guest lists, reminders</li>
+                        <li>🌱 <strong>Garden</strong> — Plants, tasks, home planning</li>
                     </ul>
-                    <p style="font-size:12px;color:#475569;margin-top:20px;">
-                        Built for Google x Kaggle 5-Day AI Agents Intensive - Capstone 2026
+
+                    <h3 style="color:#f59e0b;margin-top:20px;">🛡️ Guardian Mode</h3>
+                    <ul>
+                        <li>Runs autonomously every 30-60 minutes in background</li>
+                        <li>Detects missed medications and overdue tasks automatically</li>
+                        <li>Generates dynamic intervention plans without user input</li>
+                        <li>Auto-creates doctor tasks when adherence drops below threshold</li>
+                        <li>Escalates risk levels: LOW → MEDIUM → HIGH → CRITICAL</li>
+                        <li>Sends Windows desktop notifications proactively</li>
+                    </ul>
+
+                    <h3 style="color:#60a5fa;margin-top:20px;">🔌 Real MCP Server</h3>
+                    <ul>
+                        <li>Runs as separate HTTP server on port 8765</li>
+                        <li>5 tools: datetime, overdue tasks, medications, events, daily briefing</li>
+                        <li>Any external agent can connect via HTTP</li>
+                        <li>Try: http://127.0.0.1:8765/generate_daily_briefing</li>
+                    </ul>
+
+                    <h3 style="color:#f87171;margin-top:20px;">🔒 Privacy Features</h3>
+                    <ul>
+                        <li>All data stored locally — never leaves your machine</li>
+                        <li>Automatic PII redaction before any AI processing</li>
+                        <li>Security gate blocks dangerous commands</li>
+                        <li>Transparent analytics CSV for full auditability</li>
+                    </ul>
+
+                    <p style="margin-top:24px;font-size:12px;color:#475569;
+                        border-top:1px solid #1e2a45;padding-top:16px;">
+                        Built for Google x Kaggle 5-Day AI Agents Intensive — Capstone 2026<br>
+                        Model: Gemini 2.5 Flash · Framework: Gradio · Privacy-First Architecture
                     </p>
                 </div>
                 """)
