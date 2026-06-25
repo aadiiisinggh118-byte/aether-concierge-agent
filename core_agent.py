@@ -1032,9 +1032,167 @@ def run_guardian_monitor():
             except:
                 pass
 
-        # Wait 60 minutes before next check
-        time.sleep(3600)
+        # ── DYNAMIC MONITORING FREQUENCY ──
+        # High/Critical risk = check every 30min
+        # Medium risk = check every 45min  
+        # Low risk = check every 60min
+        risk = guardian_status["risk_level"]
+        if risk == "CRITICAL":
+            wait_seconds = 1800  # 30 minutes
+        elif risk == "HIGH":
+            wait_seconds = 1800  # 30 minutes
+        elif risk == "MEDIUM":
+            wait_seconds = 2700  # 45 minutes
+        else:
+            wait_seconds = 3600  # 60 minutes
+        
+        guardian_status["next_check_seconds"] = wait_seconds
+        time.sleep(wait_seconds)
 
+def generate_intervention_plan() -> str:
+    """
+    Fully autonomous intervention plan.
+    Dynamically generated based on current situation.
+    Changes automatically as problems are resolved.
+    Zero user input required.
+    """
+    alerts = guardian_status.get("alerts", [])
+    risk = guardian_status.get("risk_level", "LOW")
+    tasks = get_tasks()
+    health = get_health_data()
+    events = get_events()
+    now = datetime.now()
+    today = date.today()
+
+    # ── Detect specific problems ──
+    missed_meds = [a for a in alerts if "MISSED DOSE" in a]
+    overdue_tasks = [a for a in alerts if "CRITICAL" in a or "overdue" in a.lower()]
+    health_patterns = [a for a in alerts if "HEALTH PATTERN" in a]
+    event_alerts = [a for a in alerts if "EVENT" in a]
+    auto_actions = [a for a in alerts if "AUTO ACTION" in a]
+    risk_escalations = [a for a in alerts if "RISK ESCALATION" in a]
+
+    # ── Build dynamic problem statement ──
+    problems = []
+    if missed_meds:
+        med_names = list(set([
+            a.split("MISSED DOSE: ")[1].split(" —")[0]
+            for a in missed_meds
+            if "MISSED DOSE: " in a
+        ]))
+        problems.append(f"Missed medication: {', '.join(med_names)}")
+    if overdue_tasks:
+        problems.append(f"{len(overdue_tasks)} overdue high-priority task(s)")
+    if health_patterns:
+        problems.append("Low medication adherence detected")
+    if event_alerts:
+        problems.append(f"Upcoming event requires attention")
+
+    # ── Build dynamic actions taken ──
+    actions_taken = []
+    if missed_meds:
+        actions_taken.append("Medication alerts sent via Windows notification")
+        actions_taken.append("Health risk flag raised")
+    if overdue_tasks:
+        actions_taken.append("Critical task escalation triggered")
+        actions_taken.append("High priority notifications sent")
+    if auto_actions:
+        for a in auto_actions:
+            actions_taken.append(a.replace("AUTO ACTION: ", ""))
+    if risk == "HIGH" or risk == "CRITICAL":
+        actions_taken.append("Monitoring frequency increased to every 30 minutes")
+    elif risk == "MEDIUM":
+        actions_taken.append("Monitoring frequency increased to every 45 minutes")
+
+    # ── Build dynamic recommendations ──
+    recommendations = []
+    rec_num = 1
+
+    if missed_meds:
+        for med_alert in missed_meds[:1]:  # avoid duplicates
+            med_name = med_alert.split("MISSED DOSE: ")[1].split(" —")[0] if "MISSED DOSE: " in med_alert else "medication"
+            recommendations.append(
+                f"{rec_num}. Take {med_name} immediately if not done yet"
+            )
+            rec_num += 1
+        recommendations.append(
+            f"{rec_num}. Set a daily alarm to avoid future missed doses"
+        )
+        rec_num += 1
+
+    if overdue_tasks:
+        pending_high = [
+            t for t in tasks
+            if t.get("status") == "pending" and t.get("priority") == "high"
+        ]
+        for t in pending_high[:2]:
+            recommendations.append(
+                f"{rec_num}. Complete overdue task: '{t['title']}'"
+            )
+            rec_num += 1
+
+    if health_patterns:
+        recommendations.append(
+            f"{rec_num}. Review medication routine with healthcare provider"
+        )
+        rec_num += 1
+
+    if event_alerts:
+        upcoming = events.get("events", [])
+        for e in upcoming[:1]:
+            recommendations.append(
+                f"{rec_num}. Prepare for upcoming event: '{e['title']}'"
+            )
+            rec_num += 1
+
+    if not recommendations:
+        recommendations.append("1. All systems clear — maintain current routine")
+        recommendations.append("2. Continue logging daily tasks and medications")
+
+    # ── Calculate next check time ──
+    wait = guardian_status.get("next_check_seconds", 3600)
+    next_check_mins = wait // 60
+
+    # ── Build final plan ──
+    if not problems:
+        problem_text = "No critical problems detected"
+        status_icon = "✅"
+    else:
+        problem_text = "\n".join(f"  • {p}" for p in problems)
+        status_icon = "🔴" if risk in ["HIGH", "CRITICAL"] else "🟡"
+
+    actions_text = "\n".join(
+        f"  ✅ {a}" for a in actions_taken
+    ) if actions_taken else "  • No automatic actions needed"
+
+    rec_text = "\n".join(f"  {r}" for r in recommendations)
+
+    plan = f"""🤖 AETHER INTERVENTION PLAN
+Generated: {now.strftime("%B %d, %Y at %I:%M %p")}
+Fully autonomous — zero user input required
+━━━━━━━━━━━━━━━━━━━━━━
+
+{status_icon} PROBLEMS DETECTED:
+{problem_text}
+
+━━━━━━━━━━━━━━━━━━━━━━
+⚡ ACTIONS TAKEN BY GUARDIAN:
+{actions_text}
+
+━━━━━━━━━━━━━━━━━━━━━━
+💡 DYNAMIC RECOMMENDATIONS:
+{rec_text}
+
+━━━━━━━━━━━━━━━━━━━━━━
+🔄 MONITORING STATUS:
+  • Current Risk: {risk}
+  • Next check: {next_check_mins} minutes
+  • Guardian running since app start
+  • All decisions made locally — privacy first
+
+🛡️ Aether Guardian — Protecting your life autonomously"""
+
+    return plan
 
 def get_guardian_report() -> str:
     """Generate caregiver/guardian report showing full status."""
@@ -1099,12 +1257,16 @@ if __name__ == "__main__":
     mcp_thread = threading.Thread(target=run_mcp_server, daemon=True)
     mcp_thread.start()
     # Start Guardian Monitor in background
+    # Send startup notification FIRST
+    send_windows_notification("Aether Concierge", "Your personal agent is ready!")
+        
+    # Small delay so startup notification appears first
+    import time as startup_time
+    startup_time.sleep(3)
+        
+    # Start Guardian Monitor in background
     guardian_thread = threading.Thread(target=run_guardian_monitor, daemon=True)
     guardian_thread.start()
-    print("[Aether] Guardian Monitor started — checking every 60 minutes")
-    print("[Aether] MCP Server started on port 8765")
-    
-    send_windows_notification("Aether Concierge", "Your personal agent is ready!")
 
     with gr.Blocks(title="Aether Concierge") as demo:
         gr.HTML(HEADER_HTML)
@@ -1354,6 +1516,7 @@ if __name__ == "__main__":
                 with gr.Row():
                     guardian_refresh_btn = gr.Button("🔄 Check Guardian Status", variant="primary")
                     guardian_report_btn = gr.Button("📋 Full Caregiver Report", variant="secondary")
+                    intervention_btn = gr.Button("🤖 Intervention Plan", variant="secondary")
                 
                 guardian_output = gr.Textbox(
                     label="🛡️ Guardian Status",
@@ -1385,6 +1548,7 @@ if __name__ == "__main__":
 
                 guardian_refresh_btn.click(fn=check_guardian, outputs=guardian_output)
                 guardian_report_btn.click(fn=get_guardian_report, outputs=guardian_output)
+                intervention_btn.click(fn=generate_intervention_plan, outputs=guardian_output)
                 
             with gr.Tab("ℹ️ About"):
                 gr.HTML("""
